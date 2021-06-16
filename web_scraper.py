@@ -17,6 +17,8 @@ try:
     for element in elements:
         soup = BeautifulSoup(element.get_attribute('innerHTML'), 'lxml')
         # print(soup.prettify())
+        time_of_tweet = soup.find('a', attrs={'class': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0'})
+        print(time_of_tweet.time.get_text()) # todo: parse with regexp
 
         tweet_text = soup.find('div', attrs={
             'class': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0'})

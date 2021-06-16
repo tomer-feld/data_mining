@@ -1,8 +1,25 @@
+from time import sleep
+
 import requests
+from selenium import webdriver
 from bs4 import BeautifulSoup
-url = 'https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en'
+PATH = 'C:\\Users\\tomer\\chromedriver.exe'
+driver = webdriver.Chrome(PATH)
+url = "https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en"
 
-source = requests.get(url )
-soup = BeautifulSoup(source.text, 'lxml')
-
-print(soup.prettify())
+try:
+    driver.get(url)
+    source = driver.page_source
+    print(type(source))
+    soup = BeautifulSoup(source, 'lxml')
+    # print(soup.prettify())
+    sleep(10)
+    elements = driver.find_elements_by_tag_name("article")
+    for element in elements:
+        # print(type(element))
+        # print(element.get_attribute('innerHTML'))
+        print(element.text)
+    # print(element)
+finally:
+    # driver.quit()
+    pass

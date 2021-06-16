@@ -13,13 +13,12 @@ try:
     print(type(source))
     soup = BeautifulSoup(source, 'lxml')
     # print(soup.prettify())
-    sleep(10)
+    sleep(5)
     elements = driver.find_elements_by_tag_name("article")
     for element in elements:
-        # print(type(element))
-        # print(element.get_attribute('innerHTML'))
+        soup = BeautifulSoup(element.get_attribute('innerHTML'), 'lxml')
+        print(soup.prettify())
         print(element.text)
-    # print(element)
 finally:
     # driver.quit()
     pass

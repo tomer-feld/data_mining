@@ -1,23 +1,25 @@
+from time import sleep
+
 import requests
-from bs4 import BeautifulSoup
 from selenium import webdriver
-# # set a global constant variable
-# GET_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"}
-# # and than when using requests in the function:
-# # page = requests.get(url, headers=GET_HEADERS)
-# # url = 'https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en'
-# url = 'https://www.rottentomatoes.com/tv/the_umbrella_academy/s01'
-# source = requests.get(url)
-# soup = BeautifulSoup(source.text, 'html.parser')
-# # tweets = soup.find_all("li", {"data-item-type": "tweet"})
-# print(soup.prettify())
-# print('########################## tweets ############################')
-# # for tweet in tweets:
-# #     print(tweet.prettify())
-# PATH = '/usr/local/bin/geckodriver'
-driver = webdriver.Firefox()
+from bs4 import BeautifulSoup
+PATH = 'C:\\Users\\tomer\\chromedriver.exe'
+driver = webdriver.Chrome(PATH)
 url = "https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en"
 
-driver.get(url)
-print(driver)
-driver.close()
+try:
+    driver.get(url)
+    source = driver.page_source
+    print(type(source))
+    soup = BeautifulSoup(source, 'lxml')
+    # print(soup.prettify())
+    sleep(10)
+    elements = driver.find_elements_by_tag_name("article")
+    for element in elements:
+        # print(type(element))
+        # print(element.get_attribute('innerHTML'))
+        print(element.text)
+    # print(element)
+finally:
+    # driver.quit()
+    pass

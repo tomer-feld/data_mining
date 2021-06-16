@@ -17,8 +17,9 @@ try:
     elements = driver.find_elements_by_tag_name("article")
     for element in elements:
         soup = BeautifulSoup(element.get_attribute('innerHTML'), 'lxml')
-        print(soup.prettify())
-        print(element.text)
+        res  = soup.find('div', attrs={'class':'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0'})
+        print(res.get_text())
+        # print(element.text)
 finally:
     # driver.quit()
     pass

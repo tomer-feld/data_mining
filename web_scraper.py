@@ -5,10 +5,11 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup
 
-driver = webdriver.Firefox()
+# driver = webdriver.Firefox()
+driver = webdriver.Chrome()
 driver.maximize_window()
-url = "https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en"
-NUM = 90
+url = "https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en&f=live"
+NUM = 1000
 try:
     driver.get(url)
     sleep(3)

@@ -1,7 +1,9 @@
 from time import sleep
 from selenium import webdriver
 from bs4 import BeautifulSoup
+
 NUM = 666
+
 
 def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome()):
     url = f"https://twitter.com/search?q=%23{hashtag}&lang=en&f={top_or_live}"

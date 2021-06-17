@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 driver = webdriver.Chrome()
 driver.maximize_window()
 url = "https://twitter.com/search?q=%23BlackLivesMatter&src=typeahead_click&lang=en&f=live"
-NUM = 1000
+NUM = 666
 try:
     driver.get(url)
     sleep(3)

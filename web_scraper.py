@@ -1,11 +1,12 @@
 from time import sleep
 from selenium import webdriver
+import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 
-NUM = 300
+NUM = 50
 CHROME_TWEET_CLASSES = {
     'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
@@ -14,6 +15,8 @@ CHROME_TWEET_CLASSES = {
     'retweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-14gqq1x r-bcqeeo r-bnwqim r-qvutc0',
     'timeline': 'css-1dbjc4n'
 }
+# TODO: pick which languages we want to support
+SUPPORTED_LANGUAGES = ['en', 'it', 'und', 'es', 'fr']
 
 
 class Tweet:
@@ -30,22 +33,25 @@ def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome()):
         driver.maximize_window()
         driver.get(url)
         wait = WebDriverWait(driver, 3)
-        wait.until(EC.visibility_of_all_elements_located((By.XPATH, f"//div[@data-testid='tweet']")))
-        elements = driver.find_elements_by_xpath(r"//div[@data-testid='tweet']")  # gets all the tweet elements
         soups = set()
         # saving the elements into the soups set because once we scroll down we lose the elements
-        for element in elements:
-            soups.add(BeautifulSoup(element.get_attribute('innerHTML'), 'lxml'))
 
+        elements = []
+        height = {'y':0}
         while len(soups) < num:
             # get last element and its location and scroll ti its location
-            height = elements[-1].location
+            if len(elements) > 0:
+                height = elements[-1].location
             driver.execute_script(f"window.scrollTo(0,{height['y']})")
             wait.until(EC.visibility_of_all_elements_located((By.XPATH, f"//div[@data-testid='tweet']")))
             # scrape all elements that driver can find after loading
             elements = driver.find_elements_by_xpath(r"//div[@data-testid='tweet']")
             for element in elements:
-                soups.add(BeautifulSoup(element.get_attribute('innerHTML'), 'lxml'))
+                print([el.get_property('lang') for el in element.find_elements_by_xpath('//div[@lang]')])
+                if all(el.get_property('lang') in SUPPORTED_LANGUAGES for el in
+                       element.find_elements_by_xpath('//div[@lang]')):
+                    soups.add(BeautifulSoup(element.get_attribute('innerHTML'), 'lxml'))
+
             print(len(soups))  # TODO: used for sanity checks, you can delete this after you've passed them
     finally:
         driver.quit()
@@ -61,15 +67,9 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
         print(time_of_tweet.time['datetime'])
 
         tweet_text = tweet.find('div', attrs={'class': CHROME_TWEET_CLASSES['tweet_text']})
-        #     print(tweet.prettify(), '\n',tweet_text)
 
         user_handle = tweet.findAll('div', attrs={'class': CHROME_TWEET_CLASSES['user_handle']})
-        # if user_handle[0] is None:
-        #     print(tweet.prettify(), '\n',user_handle)
-        if tweet_text is None:
-            print(f'Tweet by {user_handle[0].get_text()}: ', 'The tweet was in another language')
-        else:
-            print(f'Tweet by {user_handle[0].get_text()}: ', tweet_text.get_text())
+        print(f'Tweet by {user_handle[0].get_text()}: ', tweet_text.get_text())
 
         tweet_numbers = tweet.findAll('div', attrs={'class': CHROME_TWEET_CLASSES['tweet_numbers']})
         print(
@@ -78,10 +78,7 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
         if tweet.find(text='Quote Tweet'):
             retweet_text = tweet.find('div', attrs={
                 'class': CHROME_TWEET_CLASSES['retweet_text']})
-            if retweet_text is None:
-                print(f'Retweet of {user_handle[1].get_text()}: ', 'retweet text is in another language')
-            else:
-                print(f'Retweet of {user_handle[1].get_text()}: ', retweet_text.get_text())
+            print(f'Retweet of {user_handle[1].get_text()}: ', retweet_text.get_text())
         print()
         print()
     print(len(tweets))

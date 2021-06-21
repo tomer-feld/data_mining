@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-NUM = 200
+NUM = 50
 CHROME_TWEET_CLASSES = {
     'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
@@ -44,6 +44,11 @@ class Tweet:
 
     def get_properties(self):
         return self._properties
+
+    def __str__(self):
+        return f'{self.get_time()}\nTweet by {self.get_user_handle()}: {self.get_text()}\n' \
+               f'Comments: {self.get_stats()[0]}, Retweets: {self.get_stats()[1]},' \
+               f' Likes: {self.get_stats()[2]}'
 
 
 def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome()):
@@ -101,11 +106,7 @@ def present_tweets(tweets):
     :return:
     """
     for tweet in tweets:
-        print(tweet.get_time())
-        print(f'Tweet by {tweet.get_user_handle()}: ', tweet.get_text())
-        print(f'Comments: {tweet.get_stats()[0]}, Retweets: {tweet.get_stats()[1]}, Likes: {tweet.get_stats()[2]}')
-        print()
-        print()
+        print(tweet, '\n\n')
 
 
 # TODO: need to create function that exports tweets to file, and maybe also importer

@@ -108,6 +108,7 @@ def present_tweets(tweets):
         print()
 
 
+# TODO: need to create function that exports tweets to file, and maybe also importer
 def main():
     raw_tweets = scrape_hashtag(NUM, 'BlackLivesMatter')
     tweets = extract_tweet_data(raw_tweets)

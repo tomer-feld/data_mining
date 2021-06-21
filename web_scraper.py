@@ -1,14 +1,18 @@
 from time import sleep
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 
-NUM = 30
+NUM = 300
 CHROME_TWEET_CLASSES = {
     'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
     'user_handle': 'css-901oao css-bfa6kz r-m0bqgq r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
     'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
-    'retweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-14gqq1x r-bcqeeo r-bnwqim r-qvutc0'
+    'retweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-14gqq1x r-bcqeeo r-bnwqim r-qvutc0',
+    'timeline': 'css-1dbjc4n'
 }
 
 
@@ -25,7 +29,8 @@ def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome()):
     try:
         driver.maximize_window()
         driver.get(url)
-        sleep(3)  # TODO: need to change this to driver wait function
+        wait = WebDriverWait(driver, 3)
+        wait.until(EC.visibility_of_all_elements_located((By.XPATH, f"//div[@data-testid='tweet']")))
         elements = driver.find_elements_by_xpath(r"//div[@data-testid='tweet']")  # gets all the tweet elements
         soups = set()
         # saving the elements into the soups set because once we scroll down we lose the elements
@@ -36,7 +41,7 @@ def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome()):
             # get last element and its location and scroll ti its location
             height = elements[-1].location
             driver.execute_script(f"window.scrollTo(0,{height['y']})")
-            sleep(3)  # TODO: need to change this to driver wait function
+            wait.until(EC.visibility_of_all_elements_located((By.XPATH, f"//div[@data-testid='tweet']")))
             # scrape all elements that driver can find after loading
             elements = driver.find_elements_by_xpath(r"//div[@data-testid='tweet']")
             for element in elements:
@@ -56,9 +61,15 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
         print(time_of_tweet.time['datetime'])
 
         tweet_text = tweet.find('div', attrs={'class': CHROME_TWEET_CLASSES['tweet_text']})
+        #     print(tweet.prettify(), '\n',tweet_text)
 
         user_handle = tweet.findAll('div', attrs={'class': CHROME_TWEET_CLASSES['user_handle']})
-        print(f'Tweet by {user_handle[0].get_text()}: ', tweet_text.get_text())
+        # if user_handle[0] is None:
+        #     print(tweet.prettify(), '\n',user_handle)
+        if tweet_text is None:
+            print(f'Tweet by {user_handle[0].get_text()}: ', 'The tweet was in another language')
+        else:
+            print(f'Tweet by {user_handle[0].get_text()}: ', tweet_text.get_text())
 
         tweet_numbers = tweet.findAll('div', attrs={'class': CHROME_TWEET_CLASSES['tweet_numbers']})
         print(
@@ -67,7 +78,10 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
         if tweet.find(text='Quote Tweet'):
             retweet_text = tweet.find('div', attrs={
                 'class': CHROME_TWEET_CLASSES['retweet_text']})
-            print(f'Retweet of {user_handle[1].get_text()}: ', retweet_text.get_text())
+            if retweet_text is None:
+                print(f'Retweet of {user_handle[1].get_text()}: ', 'retweet text is in another language')
+            else:
+                print(f'Retweet of {user_handle[1].get_text()}: ', retweet_text.get_text())
         print()
         print()
     print(len(tweets))

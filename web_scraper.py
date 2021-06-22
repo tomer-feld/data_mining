@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import os
@@ -13,21 +14,21 @@ CHROME_TWEET_CLASSES = {
     # 'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     # 'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
     # 'user_handle': 'css-901oao css-bfa6kz r-m0bqgq r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
-    'user_handle': 'css-901oao css-bfa6kz r-14j79pv r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
-    'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
     # 'quoted_tweet': 'css-1dbjc4n r-1bs4hfb r-1867qdf r-rs99b7 r-1loqt21 r-adacv r-1ny4l3l r-1udh08x r-o7ynqc r-6416eg',
     # 'retweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-14gqq1x r-bcqeeo r-bnwqim r-qvutc0',
     # 'timeline': 'css-1dbjc4n',
+    'user_handle': 'css-901oao css-bfa6kz r-14j79pv r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
+    'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
     'tags': 'css-4rbku5 css-18t94o4 css-901oao css-16my406 r-1n1174f r-1loqt21 r-poiln3 r-bcqeeo r-qvutc0'
 }
 FIREFOX_TWEET_CLASSES = {
     # 'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     # 'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
-    'user_handle': 'css-901oao css-bfa6kz r-9ilb82 r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
-    'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
     # 'quoted_tweet': 'css-1dbjc4n r-1bs4hfb r-1867qdf r-rs99b7 r-1loqt21 r-adacv r-1ny4l3l r-1udh08x r-o7ynqc r-6416eg',
     # 'retweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-14gqq1x r-bcqeeo r-bnwqim r-qvutc0',
     # 'timeline': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
+    'user_handle': 'css-901oao css-bfa6kz r-9ilb82 r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
+    'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
     'tags': 'css-4rbku5 css-18t94o4 css-901oao css-16my406 r-1n1174f r-1loqt21 r-poiln3 r-b88u0q r-bcqeeo r-qvutc0'
 }
 # TODO: pick which languages we want to support
@@ -178,7 +179,13 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
         tweet_text = tweet.find('div', attrs={'lang': SUPPORTED_LANGUAGES})
         tags = tweet_text.findAll('a', attrs={'class': class_dict['tags']})
         tweet_text = tweet_text.get_text()
-        user_handle = tweet.find('div', attrs={'class': class_dict['user_handle']}).get_text()
+        # TODO: I don't know why on my laptop the firefox user handle class is different but on
+        #  my pc they are the same as chrome (laptop linux, windows pc)
+        #  but my chrome classes are the same on pc and laptop
+        if tweet.find('div', attrs={'class': FIREFOX_TWEET_CLASSES['user_handle']}) is None:
+            user_handle = tweet.find('div', attrs={'class': CHROME_TWEET_CLASSES['user_handle']}).get_text()
+        else:
+            user_handle = tweet.find('div', attrs={'class': FIREFOX_TWEET_CLASSES['user_handle']}).get_text()
         tweet_numbers = [stat.get_text() for stat in tweet.findAll('div', attrs={'class': class_dict['tweet_numbers']})]
         quoted_tweet_data = tweet.find('div', attrs={'role': 'link'})
         quoted_tweet = None
@@ -229,7 +236,7 @@ def main():
     parser.add_argument('-t_l', metavar='top_or_live', help='Get the live tweets or top tweets of hashtag',
                         choices=['top', 'live'], default='live')
     parser.add_argument('-file', help='File to write to', default='tweets.csv')
-    parser.add_argument('-max_wait', help='Maximum wait time', default=MAX_WAIT)
+    parser.add_argument('-max_wait', help='Maximum wait time', default=MAX_WAIT, type=int)
     parser.add_argument('-p', help='print out tweets to console', action='store_true')
     args = parser.parse_args()
     if not os.path.exists(os.path.dirname(os.path.abspath(args.file))) or not args.file.endswith('.csv'):
@@ -241,8 +248,12 @@ def main():
     if args.max_wait < MAX_WAIT:
         print('Not allowing you to get errors to reduce the wait time.')
         exit(1)
-    raw_tweets = scrape_hashtag(args.hashtag, args.min_tweets, max_wait=args.max_wait, chrome_or_firefox=args.c_f,
+    try:
+        raw_tweets = scrape_hashtag(args.hashtag, args.min_tweets, max_wait=args.max_wait, chrome_or_firefox=args.c_f,
                                 top_or_live=args.t_l)
+    except TimeoutException as te:
+        print('Your computer took too long to load the browser consider raising the maximum wait time.')
+        exit(1)
     tweets = extract_tweet_data(raw_tweets, chrome_or_firefox=args.c_f)
     if args.p:
         present_tweets(tweets)

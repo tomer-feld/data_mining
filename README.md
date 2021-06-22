@@ -5,8 +5,10 @@ html file so we had to use Selenium and even still we had to manually find the n
 held the elements we wanted to scrape. We also used Selenium to scroll down the web page and load more tweets.
 You can run the the code using the requirements.txt to install the specific modules we used and running the
 web_scraper in the command line.
+
 NOTE: you must have chromedriver or geckodriver executable (depending if you use chrome or firefox accordingly) in the PATH
 and chrome or firefox installed
+
 NOTE II: We've added the latest drivers to date in the project for windows users
 
 usage: hashtag [-h] [-min_tweets MIN_TWEETS] [-c_f chrome_or_firefox] [-t_l top_or_live] 

@@ -1,12 +1,13 @@
 # data_mining
-https://github.com/tomer-feld/data_mining.git to clone
-
 Tomer Feld and Aaron Reuven,
 We chose to work on scraping tweets from specific hashtags on twitter. We had difficulty accessing the elements in the
 html file so we had to use Selenium and even still we had to manually find the names of different containers that
 held the elements we wanted to scrape. We also used Selenium to scroll down the web page and load more tweets.
 You can run the the code using the requirements.txt to install the specific modules we used and running the
 web_scraper in the command line.
+
+Clone url:
+https://github.com/tomer-feld/data_mining.git
 
 NOTE: you must have chromedriver or geckodriver executable (depending if you use chrome or firefox accordingly) in the PATH
 and chrome or firefox installed
@@ -28,4 +29,5 @@ usage: hashtag [-h] [-min_tweets MIN_TWEETS] [-c_f chrome_or_firefox] [-t_l top_
 
 -max_wait: choose maximum time to wait for elements to load default is 3 (this isn't that relevant because 
 We're not allowing less than 3 seconds and 3 seconds should be enough)
+
                   

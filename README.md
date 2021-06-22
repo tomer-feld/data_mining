@@ -1,4 +1,5 @@
 # data_mining
+https://github.com/tomer-feld/data_mining.git to clone
 Tomer Feld and Aaron Reuven,
 We chose to work on scraping tweets from specific hashtags on twitter. We had difficulty accessing the elements in the
 html file so we had to use Selenium and even still we had to manually find the names of different containers that

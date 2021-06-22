@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+PATH = 'C:\\Users\\tomer\\chromedriver.exe'
 NUM = 50
 CHROME_TWEET_CLASSES = {
     'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
@@ -51,7 +52,7 @@ class Tweet:
                f' Likes: {self.get_stats()[2]}'
 
 
-def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome()):
+def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome(PATH)):
     url = f"https://twitter.com/search?q=%23{hashtag}&lang=en&f={top_or_live}"
     try:
         driver.maximize_window()
@@ -111,7 +112,8 @@ def present_tweets(tweets):
 
 # TODO: need to create function that exports tweets to file, and maybe also importer
 def main():
-    raw_tweets = scrape_hashtag(NUM, 'BlackLivesMatter')
+    wd=webdriver.Chrome(PATH)
+    raw_tweets = scrape_hashtag(NUM, 'BlackLivesMatter',driver=wd)
     tweets = extract_tweet_data(raw_tweets)
     present_tweets(tweets)
 

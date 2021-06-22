@@ -71,6 +71,9 @@ class Tweet:
         return [stat if stat != '' else '0' for stat in self._stats]
 
     def get_properties(self):
+        """
+        :return: a dictionary
+        """
         return self._properties
 
     def get_hashtags(self):
@@ -82,9 +85,15 @@ class Tweet:
         return [tag.get_text() for tag in self._tags if tag.get_text().startswith('@')]
 
     def get_quoted_tweet(self):
+        """
+        :return: a Tweet object
+        """
         return self._quoted_tweet
 
     def __repr__(self):
+        """
+        :return: representation of the tweet
+        """
         d_of_tweet = {'text': self._text, 'user_handle': self._user_handle, 'time': self._time,
                       'tags': self._tags, 'stats': self._stats, 'quoted_tweet': self._quoted_tweet,
                       'properties': self._properties}
@@ -220,11 +229,23 @@ def main():
     parser.add_argument('-t_l', metavar='top_or_live', help='Get the live tweets or top tweets of hashtag',
                         choices=['top', 'live'], default='live')
     parser.add_argument('-file', help='File to write to', default='tweets.csv')
+    parser.add_argument('-max_wait', help='Maximum wait time', default=MAX_WAIT)
+    parser.add_argument('-p', help='print out tweets to console', action='store_true')
     args = parser.parse_args()
-    raw_tweets = scrape_hashtag(args.hashtag, args.min_tweets, chrome_or_firefox=args.c_f,
+    if not os.path.exists(os.path.dirname(os.path.abspath(args.file))) or not args.file.endswith('.csv'):
+        print('Can only create csv files.')
+        exit(1)
+    if args.t_l == 'top' and args.min_tweets > 50:
+        print('Need to implement exit out of loop when reached last tweet.\nFor now limited top to 50')
+        exit(1)
+    if args.max_wait < MAX_WAIT:
+        print('Not allowing you to get errors to reduce the wait time.')
+        exit(1)
+    raw_tweets = scrape_hashtag(args.hashtag, args.min_tweets, max_wait=args.max_wait, chrome_or_firefox=args.c_f,
                                 top_or_live=args.t_l)
     tweets = extract_tweet_data(raw_tweets, chrome_or_firefox=args.c_f)
-    present_tweets(tweets)
+    if args.p:
+        present_tweets(tweets)
     save_to_csv(tweets, args.file, overwrite=True)
 
 

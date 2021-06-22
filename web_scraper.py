@@ -45,7 +45,7 @@ class Tweet:
         self._text = tweet_text
         self._stats = stats
         if not self._stats or self._stats is None:
-            self._stats = [BeautifulSoup('<a></a>', 'lxml') for i in range(3)]
+            self._stats = ['', '', '']
         self._tags = tags
         if self._tags is None:
             self._tags = []
@@ -58,15 +58,15 @@ class Tweet:
 
     def get_text(self):
         """ returns tha plain text of the tweet"""
-        return self._text.get_text()
+        return self._text
 
     def get_user_handle(self):
         """returns the user handle of the tweet poster"""
-        return self._user_handle[0].get_text()
+        return self._user_handle
 
     def get_stats(self):
         """returns the number of comments, retweets and likes"""
-        return [stat.get_text() if stat.get_text() != '' else '0' for stat in self._stats]
+        return [stat if stat != '' else '0' for stat in self._stats]
 
     def get_properties(self):
         return self._properties
@@ -81,6 +81,12 @@ class Tweet:
 
     def get_quoted_tweet(self):
         return self._quoted_tweet
+
+    def __repr__(self):
+        d_of_tweet = {'text': self._text, 'user_handle': self._user_handle, 'time': self._time,
+                      'tags': self._tags, 'stats': self._stats, 'quoted_tweet': self._quoted_tweet,
+                      'properties': self._properties}
+        return str(d_of_tweet)
 
     def __str__(self):
         """displays the content of the tweet object"""
@@ -113,14 +119,12 @@ def scrape_hashtag(num, hashtag, max_wait=MAX_WAIT, top_or_live='live', chrome_o
     :param num: int. Number of desired tweets for scraping
     :param hashtag: string. Hashtag for scraping
     :param top_or_live: string. choose if scraping the top or the live tweets. default is 'live'
-    :param driver: the Selenium driver
     :return: Set of raw tweets
     """
     url = f"https://twitter.com/search?q=%23{hashtag}&lang=en{LIVE_OR_TOP[top_or_live]}"
     # saving the elements into the soups set because once we scroll down we lose the elements
     soups = set()
-    try:
-        driver = open_driver(chrome_or_firefox)
+    with open_driver(chrome_or_firefox) as driver:
         driver.maximize_window()
         driver.get(url)
         wait = WebDriverWait(driver, max_wait)
@@ -141,8 +145,6 @@ def scrape_hashtag(num, hashtag, max_wait=MAX_WAIT, top_or_live='live', chrome_o
                         old = len(soups)
                         soups.add(BeautifulSoup(element.get_attribute('innerHTML'), 'lxml'))
                         pbar.update(len(soups) - old)
-    finally:
-        driver.quit()
     return soups
 
 
@@ -161,10 +163,11 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
     for tweet in tweets:
         time_of_tweet = tweet.find('time')['datetime']
         tweet_text = tweet.find('div', attrs={'lang': SUPPORTED_LANGUAGES})
-        user_handle = tweet.findAll('div', attrs={'class': class_dict['user_handle']})
-        tweet_numbers = tweet.findAll('div', attrs={'class': class_dict['tweet_numbers']})
-        quoted_tweet_data = tweet.find('div', attrs={'class': class_dict['quoted_tweet']})
         tags = tweet_text.findAll('a', attrs={'class': class_dict['tags']})
+        tweet_text = tweet_text.get_text()
+        user_handle = tweet.find('div', attrs={'class': class_dict['user_handle']}).get_text()
+        tweet_numbers = [stat.get_text() for stat in tweet.findAll('div', attrs={'class': class_dict['tweet_numbers']})]
+        quoted_tweet_data = tweet.find('div', attrs={'class': class_dict['quoted_tweet']})
         quoted_tweet = None
         if quoted_tweet_data is not None:
             quoted_tweet = extract_tweet_data([quoted_tweet_data], chrome_or_firefox)[0]
@@ -195,10 +198,10 @@ def save_to_csv(tweets, file_name, overwrite=False):
     if os.path.isfile(file_name) and not overwrite:
         print("File already exist. Didn't overwrite")
         return
-    df = pd.DataFrame(columns=('user_handle', 'time_stamp', 'text', 'stats', 'mentions', 'hashtags', 'quoted_tweet'))
+    df = pd.DataFrame(columns=('user_handle', 'time_stamp', 'text', 'stats', 'tags', 'quoted_tweet'))
     for tweet in tweets:
-        data = [tweet.get_user_handle(), tweet.get_time(), tweet.get_text(),
-                tweet.get_stats(), tweet.get_mentions(), tweet.get_hashtags(), tweet.get_quoted_tweet()]
+        data = [tweet.get_user_handle(), tweet.get_time(), tweet.get_time(),
+                tweet.get_stats(), tweet._tags, repr(tweet.get_quoted_tweet())]
         row = pd.Series(data, index=df.columns)
         df = df.append(row, ignore_index=True)
     df.to_csv(file_name)

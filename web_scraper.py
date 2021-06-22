@@ -1,12 +1,15 @@
+import os.path
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+import pandas as pd
 
 PATH = 'C:\\Users\\tomer\\chromedriver.exe'
-NUM = 50
+NUM = 1
 CHROME_TWEET_CLASSES = {
     'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
@@ -78,7 +81,8 @@ def scrape_hashtag(num, hashtag, top_or_live='live', driver=webdriver.Chrome(PAT
                         soups.add(BeautifulSoup(element.get_attribute('innerHTML'), 'lxml'))
                         pbar.update(len(soups) - old)
     finally:
-        driver.quit()
+        # driver.quit()
+        pass
     return soups
 
 
@@ -92,9 +96,11 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
         tweet_numbers = tweet.findAll('div', attrs={'class': CHROME_TWEET_CLASSES['tweet_numbers']})
 
         # TODO: still need to address the quoted tweet
-        if tweet.find(text='Quote Tweet'):
-            retweet_text = tweet.find('div', attrs={
-                'class': CHROME_TWEET_CLASSES['retweet_text']})
+        # if len(user_handle) == 2:
+
+        # if tweet.find(text='Quote Tweet'):
+        #     retweet_text = tweet.find('div', attrs={
+                # 'class': CHROME_TWEET_CLASSES['retweet_text']})
             # print(f'Retweet of {user_handle[1].get_text()}: ', retweet_text.get_text())
         extracted_tweets.append(Tweet(user_handle, time_of_tweet, tweet_text, stats=tweet_numbers))
     return extracted_tweets
@@ -110,12 +116,27 @@ def present_tweets(tweets):
         print(tweet, '\n\n')
 
 
+def save_to_csv(tweets, file_name, overwrite=False):
+    if os.path.isfile(file_name) and not overwrite:
+        print("File already exist. Didn't overwrite")
+        return
+    df = pd.DataFrame(columns=('user_handle', 'time_stamp', 'text', 'stats'))
+    for tweet in tweets:
+        data = [tweet.get_user_handle(), tweet.get_time(), tweet.get_text(), tweet.get_stats()]
+        row = pd.Series(data, index=df.columns)
+        df = df.append(row, ignore_index=True)
+    df.to_csv(file_name)
+
+
 # TODO: need to create function that exports tweets to file, and maybe also importer
 def main():
-    wd=webdriver.Chrome(PATH)
-    raw_tweets = scrape_hashtag(NUM, 'BlackLivesMatter',driver=wd)
+    wd = webdriver.Chrome(PATH)
+    raw_tweets = scrape_hashtag(NUM, 'BlackLivesMatter', driver=wd)
+    for tweet in raw_tweets:
+        print(tweet.prettify())
     tweets = extract_tweet_data(raw_tweets)
     present_tweets(tweets)
+    save_to_csv(tweets, 'test.csv',overwrite=True)
 
 
 if __name__ == '__main__':

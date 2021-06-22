@@ -1,10 +1,11 @@
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import os
+import argparse
 import pandas as pd
 
 NUM = 30
@@ -21,7 +22,7 @@ CHROME_TWEET_CLASSES = {
 FIREFOX_TWEET_CLASSES = {
     # 'time_of_tweet': 'css-4rbku5 css-18t94o4 css-901oao r-m0bqgq r-1loqt21 r-1q142lx r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0',
     # 'tweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0',
-    'user_handle': 'css-901oao css-bfa6kz r-m0bqgq r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
+    'user_handle': 'css-901oao css-bfa6kz r-9ilb82 r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
     'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
     'quoted_tweet': 'css-1dbjc4n r-1bs4hfb r-1867qdf r-rs99b7 r-1loqt21 r-adacv r-1ny4l3l r-1udh08x r-o7ynqc r-6416eg',
     # 'retweet_text': 'css-901oao r-18jsvk2 r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-14gqq1x r-bcqeeo r-bnwqim r-qvutc0',
@@ -115,6 +116,7 @@ def scrape_hashtag(num, hashtag, max_wait=MAX_WAIT, top_or_live='live', chrome_o
     """
     Opens the desired twitter hashtag page and returns a set containing all the raw tweets html data.
     closes the page at the end
+    :param chrome_or_firefox: string denoting which webdriver to use
     :param max_wait: maximum wait time for elements to load
     :param num: int. Number of desired tweets for scraping
     :param hashtag: string. Hashtag for scraping
@@ -134,7 +136,8 @@ def scrape_hashtag(num, hashtag, max_wait=MAX_WAIT, top_or_live='live', chrome_o
             while len(soups) < num:
                 # get last element and its location and scroll to its location
                 driver.execute_script(f"window.scrollTo(0,{height})")
-                wait.until(EC.visibility_of_all_elements_located((By.XPATH, f"//div[@data-testid='tweet']")))
+                wait.until(ec.visibility_of_all_elements_located((By.XPATH, f"//div[@data-testid='tweet']")))
+                wait.until(ec.visibility_of_all_elements_located((By.XPATH, f"//div[@lang]")))
                 # scrape all elements that driver can find after loading
                 elements = driver.find_elements_by_xpath(r"//div[@data-testid='tweet']")
                 if len(elements) > 0:
@@ -209,10 +212,18 @@ def save_to_csv(tweets, file_name, overwrite=False):
 
 # TODO: need to create function that exports tweets to file, and maybe also importer
 def main():
-    raw_tweets = scrape_hashtag(NUM, 'BlackLivesMatter')
-    tweets = extract_tweet_data(raw_tweets)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('hashtag', help='any hashtag for twitter')
+    parser.add_argument('minimum_tweets', help='minimum amount of tweets to scrap', type=int)
+    parser.add_argument('chrome_or_firefox', help='Browser to use', choices=['chrome', 'firefox'])
+    parser.add_argument('top_or_live', help='Get the live tweets or top tweets of hashtag', choices=['top', 'live'])
+    parser.add_argument('file_to_write', help='File to write to')
+    args = parser.parse_args()
+    raw_tweets = scrape_hashtag(args.minimum_tweets, args.hashtag, chrome_or_firefox=args.chrome_or_firefox,
+                                top_or_live=args.top_or_live)
+    tweets = extract_tweet_data(raw_tweets, chrome_or_firefox=args.chrome_or_firefox)
     present_tweets(tweets)
-    save_to_csv(tweets, 'test.csv', overwrite=True)
+    save_to_csv(tweets, args.file_to_write, overwrite=True)
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import os
@@ -30,6 +31,7 @@ FIREFOX_TWEET_CLASSES = {
     'user_handle': 'css-901oao css-bfa6kz r-9ilb82 r-18u37iz r-1qd0xha r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0',
     'tweet_numbers': 'css-1dbjc4n r-xoduu5 r-1udh08x',
     'tags': 'css-4rbku5 css-18t94o4 css-901oao css-16my406 r-1n1174f r-1loqt21 r-poiln3 r-b88u0q r-bcqeeo r-qvutc0'
+
 }
 # TODO: pick which languages we want to support
 SUPPORTED_LANGUAGES = ['en', 'it', 'und', 'es', 'fr']
@@ -51,7 +53,7 @@ class Tweet:
             self._stats = ['', '', '']
         self._tags = tags
         if self._tags is None:
-            self._tags = []
+            self._tags = {'hashtags': [], 'mentions': []}
         self._quoted_tweet = quoted_tweet
         self._properties = properties
 
@@ -79,11 +81,11 @@ class Tweet:
 
     def get_hashtags(self):
         """returns a list of all the hashtags used in the tweet"""
-        return [tag.get_text() for tag in self._tags if tag.get_text().startswith('#')]
+        return self._tags['hashtags']
 
     def get_mentions(self):
         """returns a list of al the users mentioned in the tweet"""
-        return [tag.get_text() for tag in self._tags if tag.get_text().startswith('@')]
+        return self._tags['mentions']
 
     def get_quoted_tweet(self):
         """
@@ -177,7 +179,12 @@ def extract_tweet_data(tweets, chrome_or_firefox='chrome'):
     for tweet in tweets:
         time_of_tweet = tweet.find('time')['datetime']
         tweet_text = tweet.find('div', attrs={'lang': SUPPORTED_LANGUAGES})
+        if tweet_text is None:
+            tweet_text = BeautifulSoup('<div></div>', 'lxml')
         tags = tweet_text.findAll('a', attrs={'class': class_dict['tags']})
+        hashtags = [tag.get_text() for tag in tags if tag.get_text().startswith('#')]
+        mentions = [tag.get_text() for tag in tags if tag.get_text().startswith('@')]
+        tags = {'hashtags': hashtags, 'mentions': mentions}
         tweet_text = tweet_text.get_text()
         # TODO: I don't know why on my laptop the firefox user handle class is different but on
         #  my pc they are the same as chrome (laptop linux, windows pc)
@@ -219,7 +226,7 @@ def save_to_csv(tweets, file_name, overwrite=False):
         return
     df = pd.DataFrame(columns=('user_handle', 'time_stamp', 'text', 'stats', 'tags', 'quoted_tweet'))
     for tweet in tweets:
-        data = [tweet.get_user_handle(), tweet.get_time(), tweet.get_time(),
+        data = [tweet.get_user_handle(), tweet.get_time(), tweet.get_text(),
                 tweet.get_stats(), tweet._tags, repr(tweet.get_quoted_tweet())]
         row = pd.Series(data, index=df.columns)
         df = df.append(row, ignore_index=True)
@@ -250,9 +257,12 @@ def main():
         exit(1)
     try:
         raw_tweets = scrape_hashtag(args.hashtag, args.min_tweets, max_wait=args.max_wait, chrome_or_firefox=args.c_f,
-                                top_or_live=args.t_l)
+                                    top_or_live=args.t_l)
     except TimeoutException as te:
         print('Your computer took too long to load the browser consider raising the maximum wait time.')
+        exit(1)
+    except StaleElementReferenceException as stale:
+        print('Try running it again, one of the elements became stale and could not be extracted.')
         exit(1)
     tweets = extract_tweet_data(raw_tweets, chrome_or_firefox=args.c_f)
     if args.p:
